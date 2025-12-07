@@ -425,3 +425,10 @@
         padding: var(--space-sm);
     }
 }
+
+@media (max-width: 768px) {
+    .chat-main {
+        padding-bottom: 64px;
+        /* Ensure input isn't behind nav */
+    }
+}
