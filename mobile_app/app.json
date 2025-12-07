@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MedTutor AI",
-    "slug": "medtutor-ai",
+    "slug": "medai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,7 +29,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "medtutor-ai"
+        "projectId": "77cff86d-ca5c-4c45-9b10-0cda6765e456"
       }
     }
   }

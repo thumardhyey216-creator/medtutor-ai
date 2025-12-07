@@ -21,13 +21,20 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // CORS Configuration
 const allowedOrigins = (process.env.CORS_ORIGIN || '*').split(',');
+console.log('🔧 CORS Allowed Origins:', allowedOrigins);
+
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
         // Check if origin is allowed (or if wildcard is used)
-        if (allowedOrigins.includes('*') || allowedOrigins.indexOf(origin) !== -1) {
+        // Also explicitly allow Vercel deployments for convenience
+        if (
+            allowedOrigins.includes('*') || 
+            allowedOrigins.indexOf(origin) !== -1 ||
+            origin.endsWith('.vercel.app')
+        ) {
             callback(null, true);
         } else {
             console.warn(`Blocked CORS request from origin: ${origin}`);
