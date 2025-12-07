@@ -8,18 +8,25 @@ const { Pool } = require('pg');
 // Check if using Supabase based on host URL
 const isSupabase = (process.env.DB_HOST || '').includes('supabase.co');
 
-const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'medtutor_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    // Enable SSL for Supabase, disable for local if needed
-    ssl: isSupabase ? { rejectUnauthorized: false } : false,
-});
+const pool = new Pool(
+    process.env.DATABASE_URL
+        ? {
+              connectionString: process.env.DATABASE_URL,
+              ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+          }
+        : {
+              host: process.env.DB_HOST || 'localhost',
+              port: process.env.DB_PORT || 5432,
+              database: process.env.DB_NAME || 'medtutor_db',
+              user: process.env.DB_USER || 'postgres',
+              password: process.env.DB_PASSWORD,
+              max: 20,
+              idleTimeoutMillis: 30000,
+              connectionTimeoutMillis: 10000,
+              // Enable SSL for Supabase, disable for local if needed
+              ssl: isSupabase ? { rejectUnauthorized: false } : false,
+          }
+);
 
 // Test connection
 pool.on('connect', () => {
@@ -33,10 +40,15 @@ pool.on('error', (err) => {
 
 // Log connection details on startup
 console.log(`\n🔌 Database Configuration:`);
-console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
-console.log(`   Database: ${process.env.DB_NAME}`);
-console.log(`   User: ${process.env.DB_USER}`);
-console.log(`   SSL: ${!!(process.env.DB_HOST && process.env.DB_HOST.includes('supabase'))}\n`);
+if (process.env.DATABASE_URL) {
+    console.log(`   Using DATABASE_URL`);
+    console.log(`   SSL: ${process.env.NODE_ENV === 'production'}`);
+} else {
+    console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
+    console.log(`   Database: ${process.env.DB_NAME}`);
+    console.log(`   User: ${process.env.DB_USER}`);
+    console.log(`   SSL: ${!!(process.env.DB_HOST && process.env.DB_HOST.includes('supabase'))}\n`);
+}
 
 // Query helper
 async function query(text, params) {
