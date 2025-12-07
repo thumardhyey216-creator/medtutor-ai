@@ -94,8 +94,17 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`
+const { initDB } = require('./scripts/init-db');
+
+async function startServer() {
+    // Initialize DB on startup
+    if (process.env.NODE_ENV === 'production' || process.env.INIT_DB_ON_START === 'true') {
+        console.log('🔄 Checking database initialization...');
+        await initDB();
+    }
+
+    app.listen(PORT, () => {
+        console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║              🩺 MedTutor AI Server                       ║
@@ -105,7 +114,10 @@ app.listen(PORT, () => {
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
   `);
-});
+    });
+}
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

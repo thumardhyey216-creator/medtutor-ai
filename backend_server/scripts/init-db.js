@@ -25,8 +25,16 @@ async function initDB() {
     } catch (err) {
         console.error('❌ Database initialization failed:', err);
     } finally {
-        await pool.end();
+        // Only close pool if running as standalone script
+        if (require.main === module) {
+            await pool.end();
+        }
     }
 }
 
-initDB();
+// Run if called directly
+if (require.main === module) {
+    initDB();
+}
+
+module.exports = { initDB };
