@@ -24,7 +24,7 @@ export default function LoginScreen({ navigation }) {
             await AsyncStorage.setItem('medtutor_token', token);
             await AsyncStorage.setItem('medtutor_user', JSON.stringify(user));
 
-            navigation.replace('Home');
+            navigation.replace('MainTabs');
         } catch (error) {
             const message = error.response?.data?.message || 'Login failed. Please check your connection and credentials.';
             Alert.alert('Error', message);
@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation }) {
             await AsyncStorage.setItem('medtutor_token', token);
             await AsyncStorage.setItem('medtutor_user', JSON.stringify(user));
 
-            navigation.replace('Home');
+            navigation.replace('MainTabs');
         } catch (error) {
             const message = error.response?.data?.message || 'Registration failed. Please check your connection.';
             Alert.alert('Error', message);

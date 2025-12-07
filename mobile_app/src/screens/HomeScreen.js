@@ -69,7 +69,7 @@ export default function HomeScreen({ navigation }) {
 
                 <TouchableOpacity 
                     style={styles.card}
-                    onPress={() => Alert.alert('Coming Soon', 'Chat feature is under development')}
+                    onPress={() => navigation.navigate('Chat')}
                 >
                     <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
                         <Text style={styles.icon}>💬</Text>
@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
 
                 <TouchableOpacity 
                     style={styles.card}
-                    onPress={() => Alert.alert('Coming Soon', 'Flashcards feature is under development')}
+                    onPress={() => navigation.navigate('Flashcards')}
                 >
                     <View style={[styles.iconContainer, { backgroundColor: '#fef3c7' }]}>
                         <Text style={styles.icon}>🎴</Text>

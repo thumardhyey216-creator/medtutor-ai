@@ -32,14 +32,14 @@ export default function ResultScreen({ route, navigation }) {
 
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => navigation.navigate('Home')}
+                    onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
                 >
                     <Text style={styles.buttonText}>Back to Home</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, styles.secondaryButton]}
-                    onPress={() => navigation.navigate('QBank')}
+                    onPress={() => navigation.navigate('MainTabs', { screen: 'QBank' })}
                 >
                     <Text style={[styles.buttonText, styles.secondaryButtonText]}>Start New Quiz</Text>
                 </TouchableOpacity>
