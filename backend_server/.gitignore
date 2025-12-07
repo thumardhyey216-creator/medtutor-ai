@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+.vscode/
+dist/
+coverage/
+*.pid
+*.seed
+*.pid.lock

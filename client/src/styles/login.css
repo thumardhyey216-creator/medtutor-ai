@@ -1,0 +1,333 @@
+/* Copy of login.css */
+/* ═══════════════════════════════════════════════════════════
+   Login / Register Page Styles – MedTutor AI
+   Works with: login.html, register.html
+   ═══════════════════════════════════════════════════════════ */
+
+/* Root layout */
+.auth-root {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    background: radial-gradient(circle at top left, var(--bg-root) 0%, var(--bg-root) 45%, #010510 100%);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Left hero section */
+.auth-hero {
+    position: relative;
+    padding: 40px 56px;
+    border-right: 1px solid rgba(15, 23, 42, 0.9);
+    background:
+        radial-gradient(circle at top left, var(--bg-root) 0%, var(--bg-secondary) 55%, var(--bg-secondary) 100%),
+        radial-gradient(circle at bottom right, #0b1120 0%, var(--bg-secondary) 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+}
+
+/* Brand */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 40px;
+}
+
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 10px 25px rgba(8, 47, 73, 0.9);
+    font-size: 18px;
+}
+
+.brand-text h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+}
+
+.brand-text p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Hero info / stats */
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 420px;
+}
+
+.hero-card {
+    background: radial-gradient(circle at top, #0b1220 0%, var(--bg-secondary) 80%);
+    border-radius: 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--bg-card);
+    box-shadow: var(--shadow-soft);
+}
+
+.hero-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hero-value {
+    display: block;
+    margin-top: 6px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.hero-sub {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--success);
+}
+
+/* Hero footer text */
+.hero-footer {
+    position: absolute;
+    left: 56px;
+    right: 56px;
+    bottom: 40px;
+    font-size: 13px;
+    color: var(--text-soft);
+    max-width: 460px;
+}
+
+/* Right auth panel */
+.auth-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 40px 32px;
+    background: radial-gradient(circle at top, var(--bg-secondary) 0%, var(--bg-secondary) 60%, #010510 100%);
+}
+
+/* Auth card (login/register box) */
+.auth-card {
+    background: radial-gradient(circle at top, #0b1220 0%, var(--bg-secondary) 40%);
+    padding: 28px 26px 24px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-soft);
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.auth-header h2 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    color: var(--text-primary);
+}
+
+.auth-header p {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Form Elements - Inherits from design-system.css but refined here */
+.field {
+    margin-bottom: 16px;
+}
+
+.label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Inline helpers below form (remember me / forgot) */
+.field-inline {
+    margin-top: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+}
+
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text-soft);
+    font-size: 12px;
+    user-select: none;
+}
+
+.checkbox input {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+}
+
+/* Links & text */
+.link-muted {
+    color: var(--text-soft);
+    text-decoration: none;
+    font-size: 12px;
+    transition: color 0.2s;
+}
+
+.link-muted:hover {
+    color: var(--text-muted);
+    text-decoration: underline;
+}
+
+.link-accent {
+    color: var(--accent-alt);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.link-accent:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+/* Below-card footer: "Already have an account?" */
+.auth-footer {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Terms text under the card */
+.terms {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-soft);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Error box */
+.error-message {
+    margin-top: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--error);
+    background: var(--error-soft);
+    border: 1px solid var(--error);
+    border-radius: var(--radius-md);
+    display: none;
+    /* Hidden by default */
+}
+
+/* Button overrides */
+.auth-card .btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.auth-card .btn:hover {
+    background: var(--accent-hover);
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 960px) {
+    .auth-root {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-hero {
+        display: none;
+    }
+
+    .auth-panel {
+        padding: 24px 16px 32px;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .terms {
+        max-width: 420px;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-panel {
+        padding: 20px 14px 28px;
+    }
+
+    .auth-card {
+        padding: 22px 18px 20px;
+        border-radius: 18px;
+    }
+
+    .field-inline {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .field-inline a {
+        align-self: flex-end;
+    }
+}
