@@ -31,7 +31,7 @@ const corsOptions = {
         // Check if origin is allowed (or if wildcard is used)
         // Also explicitly allow Vercel deployments for convenience
         if (
-            allowedOrigins.includes('*') || 
+            allowedOrigins.includes('*') ||
             allowedOrigins.indexOf(origin) !== -1 ||
             origin.endsWith('.vercel.app')
         ) {
@@ -128,7 +128,7 @@ async function startServer() {
         await initDB();
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
@@ -141,15 +141,13 @@ async function startServer() {
 ╚══════════════════════════════════════════════════════════╝
   `);
     });
-}
 
-startServer();
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, closing server...');
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+        console.log('SIGTERM received, closing server...');
+        server.close(() => {
+            console.log('Server closed');
+            process.exit(0);
+        });
     });
-});
+}
