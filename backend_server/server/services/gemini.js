@@ -285,7 +285,11 @@ async function generateQuestions(subject, topic, context, difficulty = 'medium',
             'ini-cet': `- INI CET style: Balance between conceptual and clinical questions
 - Include recent advances and current guidelines
 - Focus on high-yield topics and pattern-based questions
-- Mix of direct recall and application-based questions`
+- Mix of direct recall and application-based questions`,
+            'neet-pg-inicet': `- Combined NEET PG & INI CET style: Comprehensive approach covering both exams
+- Focus on clinical scenarios (NEET PG) and conceptual depth (INI CET)
+- Include high-yield topics, recent advances, and patient cases
+- Balance between applied knowledge and theoretical concepts`
         };
 
         const guidelines = examGuidelines[examType] || examGuidelines['neet-pg'];

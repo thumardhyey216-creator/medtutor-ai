@@ -4,7 +4,7 @@ import FlashcardAPI from '../../services/flashcardApi';
 const CreateTab = () => {
     const [decks, setDecks] = useState([]);
     const [manualForm, setManualForm] = useState({ front: '', back: '', deckId: '' });
-    const [aiForm, setAiForm] = useState({ subject: 'anatomy', topic: '', count: 5 });
+    const [aiForm, setAiForm] = useState({ subject: 'Anatomy', topic: '', count: 5 });
     const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
@@ -99,11 +99,25 @@ const CreateTab = () => {
                                 value={aiForm.subject}
                                 onChange={e => setAiForm({ ...aiForm, subject: e.target.value })}
                             >
-                                <option value="anatomy">Anatomy</option>
-                                <option value="physiology">Physiology</option>
-                                <option value="biochemistry">Biochemistry</option>
-                                <option value="pathology">Pathology</option>
-                                <option value="pharmacology">Pharmacology</option>
+                                <option value="Anatomy">Anatomy</option>
+                                <option value="Physiology">Physiology</option>
+                                <option value="Biochemistry">Biochemistry</option>
+                                <option value="Pathology">Pathology</option>
+                                <option value="Pharmacology">Pharmacology</option>
+                                <option value="Microbiology">Microbiology</option>
+                                <option value="Forensic Medicine">Forensic Medicine</option>
+                                <option value="Community Medicine">Community Medicine</option>
+                                <option value="ENT">ENT</option>
+                                <option value="Ophthalmology">Ophthalmology</option>
+                                <option value="General Medicine">General Medicine</option>
+                                <option value="General Surgery">General Surgery</option>
+                                <option value="Obstetrics & Gynaecology">Obstetrics & Gynaecology</option>
+                                <option value="Pediatrics">Pediatrics</option>
+                                <option value="Orthopedics">Orthopedics</option>
+                                <option value="Psychiatry">Psychiatry</option>
+                                <option value="Dermatology">Dermatology</option>
+                                <option value="Anesthesia">Anesthesia</option>
+                                <option value="Radiology">Radiology</option>
                             </select>
                         </div>
                         <div className="field">

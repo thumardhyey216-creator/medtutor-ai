@@ -5,7 +5,7 @@ const QBankDashboard = ({ onStartTest }) => {
     const [filters, setFilters] = useState({
         subject: '',
         difficulty: '',
-        examType: 'neet-pg'
+        examType: 'neet-pg-inicet'
     });
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -44,7 +44,20 @@ const QBankDashboard = ({ onStartTest }) => {
                         <option value="Biochemistry">Biochemistry</option>
                         <option value="Pathology">Pathology</option>
                         <option value="Pharmacology">Pharmacology</option>
-                        {/* Add more subjects */}
+                        <option value="Microbiology">Microbiology</option>
+                        <option value="Forensic Medicine">Forensic Medicine</option>
+                        <option value="Community Medicine">Community Medicine</option>
+                        <option value="ENT">ENT</option>
+                        <option value="Ophthalmology">Ophthalmology</option>
+                        <option value="General Medicine">General Medicine</option>
+                        <option value="General Surgery">General Surgery</option>
+                        <option value="Obstetrics & Gynaecology">Obstetrics & Gynaecology</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Psychiatry">Psychiatry</option>
+                        <option value="Dermatology">Dermatology</option>
+                        <option value="Anesthesia">Anesthesia</option>
+                        <option value="Radiology">Radiology</option>
                     </select>
                     <select
                         className="select"
@@ -61,8 +74,7 @@ const QBankDashboard = ({ onStartTest }) => {
                         value={filters.examType}
                         onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
                     >
-                        <option value="neet-pg">NEET PG</option>
-                        <option value="ini-cet">INI CET</option>
+                        <option value="neet-pg-inicet">NEET PG / INI CET</option>
                     </select>
                 </div>
                 
