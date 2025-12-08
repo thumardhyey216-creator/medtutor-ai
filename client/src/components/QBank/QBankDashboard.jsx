@@ -65,6 +65,20 @@ const QBankDashboard = ({ onStartTest }) => {
                         <option value="ini-cet">INI CET</option>
                     </select>
                 </div>
+                
+                {/* Custom Prompt Input */}
+                <div className="mt-md">
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                        Custom Prompt (Optional)
+                    </label>
+                    <textarea
+                        className="input"
+                        placeholder="E.g., Focus on cardiovascular drugs, or Diabetes complications..."
+                        value={filters.customPrompt || ''}
+                        onChange={(e) => setFilters({ ...filters, customPrompt: e.target.value })}
+                        style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
+                    />
+                </div>
             </div>
 
             <div className="quick-actions">

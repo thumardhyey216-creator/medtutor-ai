@@ -17,7 +17,7 @@ router.use(authenticateToken);
 router.post('/start-session', async (req, res) => {
     try {
         const userId = req.user.id;
-        const { mode, numQuestions, subject, difficulty, examType, timed } = req.body;
+        const { mode, numQuestions, subject, difficulty, examType, timed, customPrompt } = req.body;
 
         // Create session
         const sessionResult = await query(
@@ -27,59 +27,71 @@ router.post('/start-session', async (req, res) => {
 
         const sessionId = sessionResult.rows[0].id;
 
-        // Build query for fetching questions
-        let questionQuery = 'SELECT * FROM questions WHERE 1=1';
-        const params = [];
-        let paramCount = 0;
+        // If custom prompt is provided, skip DB search and go straight to generation
+        let finalQuestions = [];
+        
+        if (!customPrompt) {
+            // Build query for fetching questions
+            let questionQuery = 'SELECT * FROM questions WHERE 1=1';
+            const params = [];
+            let paramCount = 0;
 
-        if (subject) {
-            paramCount++;
-            questionQuery += ` AND LOWER(subject) = LOWER($${paramCount})`;
-            params.push(subject);
+            if (subject) {
+                paramCount++;
+                questionQuery += ` AND LOWER(subject) = LOWER($${paramCount})`;
+                params.push(subject);
+            }
+
+            if (difficulty) {
+                paramCount++;
+                questionQuery += ` AND difficulty = $${paramCount}`;
+                params.push(difficulty);
+            }
+
+            questionQuery += ` ORDER BY RANDOM() LIMIT $${paramCount + 1}`;
+            params.push(numQuestions);
+
+            const questionsResult = await query(questionQuery, params);
+            finalQuestions = questionsResult.rows;
         }
 
-        if (difficulty) {
-            paramCount++;
-            questionQuery += ` AND difficulty = $${paramCount}`;
-            params.push(difficulty);
-        }
-
-        questionQuery += ` ORDER BY RANDOM() LIMIT $${paramCount + 1}`;
-        params.push(numQuestions);
-
-        const questionsResult = await query(questionQuery, params);
-        let finalQuestions = questionsResult.rows;
-
-        // If not enough questions, generate some
+        // If not enough questions or custom prompt provided, generate some
         if (finalQuestions.length < numQuestions) {
             const needed = numQuestions - finalQuestions.length;
-            console.log(`Only ${finalQuestions.length} questions found, generating ${needed} more...`);
+            console.log(customPrompt ? 
+                `Custom prompt provided: "${customPrompt}". Generating ${needed} questions...` : 
+                `Only ${finalQuestions.length} questions found, generating ${needed} more...`
+            );
 
             try {
-                const genSubject = subject || 'General Medicine';
-                const genTopic = subject ? `${subject} General` : 'Mixed Topics'; // Use subject as topic if available
+                const genSubject = subject || (customPrompt ? 'Custom Topic' : 'General Medicine');
+                const genTopic = customPrompt || (subject ? `${subject} General` : 'Mixed Topics');
 
-                // Get relevant context using text search (similar to /generate route)
+                // Get relevant context
                 let context = [];
                 try {
-                    // If subject is provided, search for content related to it
-                    if (subject) {
+                    // Prioritize custom prompt for context search if available
+                    const searchTerm = customPrompt || subject;
+                    
+                    if (searchTerm) {
                         const contextResult = await query(
                             `SELECT text, subject, topic FROM content_chunks 
                              WHERE LOWER(subject) LIKE LOWER($1) 
+                                OR LOWER(topic) LIKE LOWER($1)
+                                OR LOWER(text) LIKE LOWER($1)
                              ORDER BY RANDOM()
                              LIMIT 5`,
-                            [`%${subject}%`]
+                            [`%${searchTerm}%`]
                         );
                         context = contextResult.rows;
-
-                        // If we have embeddings available, we could use hybrid search here
-                        // For now, fall back to text search
                     }
 
                     // If still no context, use a generic prompt
                     if (context.length === 0) {
-                        context = [{ text: `Generate questions for ${genSubject} covering important clinical and conceptual topics.` }];
+                        context = [{ text: customPrompt ? 
+                            `Generate questions based on this prompt: ${customPrompt}` : 
+                            `Generate questions for ${genSubject} covering important clinical and conceptual topics.` 
+                        }];
                     }
                 } catch (searchErr) {
                     console.error('Context search error during session start:', searchErr);
