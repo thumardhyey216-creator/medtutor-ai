@@ -37,7 +37,7 @@ export const useChat = () => {
         }
     }, []);
 
-    const sendMessage = async (text, exam, mode) => {
+    const sendMessage = async (text, exam, responseStyle, isGeneralMode) => {
         if (!text.trim()) return;
 
         // Optimistic update
@@ -50,7 +50,8 @@ export const useChat = () => {
                 message: text,
                 sessionId: currentSessionId,
                 exam,
-                response_style: mode
+                response_style: responseStyle,
+                mode: isGeneralMode ? 'general' : 'normal'
             });
 
             // Update session ID if new

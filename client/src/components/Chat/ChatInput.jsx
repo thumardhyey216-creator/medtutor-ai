@@ -6,7 +6,9 @@ const ChatInput = ({
     exam,
     setExam,
     mode,
-    setMode
+    setMode,
+    generalMode,
+    setGeneralMode
 }) => {
     const [message, setMessage] = useState('');
     const textareaRef = useRef(null);
@@ -64,6 +66,27 @@ const ChatInput = ({
                         <option value="ultra">🎓 Ultra</option>
                     </select>
                 </div>
+                <div className="mode-group">
+                    <button
+                        type="button"
+                        onClick={() => setGeneralMode(!generalMode)}
+                        style={{
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-subtle)',
+                            background: generalMode ? 'var(--accent)' : 'var(--bg-secondary)',
+                            color: generalMode ? '#fff' : 'var(--text-primary)',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                        title={generalMode ? "Switch to Exam Focus" : "Switch to General Knowledge"}
+                    >
+                        {generalMode ? '🌍 General Mode' : '📚 Exam Focus'}
+                    </button>
+                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="chat-form">
@@ -71,7 +94,7 @@ const ChatInput = ({
                     <textarea
                         ref={textareaRef}
                         className="textarea chat-input"
-                        placeholder="Ask me anything about medicine... (Press Enter to send)"
+                        placeholder={generalMode ? "Ask anything (General Knowledge)..." : "Ask a medical question (Exam Focus)..."}
                         rows="1"
                         value={message}
                         onChange={handleInput}

@@ -234,7 +234,10 @@ router.post('/message', async (req, res) => {
         const cacheKey = `ctx_${msgHash}_${retrievalDepth}`;
         const cachedContext = cache.get(cacheKey);
 
-        if (cachedContext) {
+        if (mode === 'general') {
+            console.log('🌍 General mode requested - skipping context retrieval');
+            context = [];
+        } else if (cachedContext) {
             context = cachedContext;
             console.log(`📦 Using cached context (${context.length} chunks)`);
         } else {
@@ -334,7 +337,7 @@ router.post('/message', async (req, res) => {
             }
         }
 
-        const aiResult = await generateChatResponse(cleanMessage, context, normalizedStyle);
+        const aiResult = await generateChatResponse(cleanMessage, context, normalizedStyle, exam, userId, mode);
 
         // Extract response components
         const aiResponse = aiResult.response;

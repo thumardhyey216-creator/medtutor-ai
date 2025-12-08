@@ -8,6 +8,7 @@ const Dashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [exam, setExam] = useState('neet-pg');
     const [mode, setMode] = useState('standard');
+    const [generalMode, setGeneralMode] = useState(false);
 
     const {
         messages,
@@ -23,7 +24,7 @@ const Dashboard = () => {
     } = useChat();
 
     const handleSendMessage = (text) => {
-        sendMessage(text, exam, mode);
+        sendMessage(text, exam, mode, generalMode);
     };
 
     return (
@@ -93,6 +94,8 @@ const Dashboard = () => {
                     setExam={setExam}
                     mode={mode}
                     setMode={setMode}
+                    generalMode={generalMode}
+                    setGeneralMode={setGeneralMode}
                 />
             </main>
 

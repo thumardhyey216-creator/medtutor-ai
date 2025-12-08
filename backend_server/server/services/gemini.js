@@ -111,24 +111,45 @@ function extractAndParseJSON(text) {
 }
 
 /**
- * Generate chat response with RAG context
- * Simplified approach: single system prompt, let AI decide structure
+ * Generate chat response
  * @param {number} userId - Optional user ID for token tracking
  */
-async function generateChatResponse(userMessage, context = [], responseStyle = 'standard', exam = 'NEET PG', userId = null) {
+async function generateChatResponse(userMessage, context = [], responseStyle = 'standard', exam = 'NEET PG', userId = null, mode = 'normal') {
     const start = Date.now();
-    console.log(`🤖 Generating AI response (Style: ${responseStyle}, Context: ${context.length} chunks)...`);
+    console.log(`🤖 Generating AI response (Style: ${responseStyle}, Mode: ${mode}, Context: ${context.length} chunks)...`);
 
     try {
         const model = genAI.getGenerativeModel({ model: CHAT_MODEL });
+        let prompt;
 
-        // Build context text from retrieved chunks
-        const contextText = context && context.length > 0
-            ? context.map(c => `[${c.subject} - ${c.topic}]\n${c.text}`).join('\n\n---\n\n')
-            : '[No specific context available from knowledge base]';
+        if (mode === 'general') {
+             // General Mode Prompt
+             prompt = `${prompts.GENERAL_SYSTEM_PROMPT}
 
-        // Simple, clean prompt - single system prompt approach
-        const prompt = `${prompts.SYSTEM_PROMPT}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STUDENT QUERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Exam: ${exam}
+Response Style: ${responseStyle}
+
+Query: ${userMessage}
+
+Now provide your answer based on your general medical knowledge.
+IMPORTANT: You MUST follow the '${responseStyle}' response style defined in the system prompt.
+- If 'ultra': Provide a textbook-level, exhaustive explanation (2000+ words).
+- If 'comprehensive': Provide a deep dive with extensive details (900-1500 words).
+- If 'standard': Provide a balanced coverage (450-900 words).
+- If 'brief': Provide a quick summary (150-250 words).
+
+Response:`;
+        } else {
+            // RAG Mode Prompt
+            const contextText = context && context.length > 0
+                ? context.map(c => `[${c.subject} - ${c.topic}]\n${c.text}`).join('\n\n---\n\n')
+                : '[No specific context available from knowledge base]';
+
+            prompt = `${prompts.SYSTEM_PROMPT}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONTEXT (Use STRICTLY)
@@ -154,6 +175,7 @@ For '${responseStyle}', the expected length and depth is CRITICAL.
 - If 'brief': Provide a quick summary (150-250 words).
 
 Response:`;
+        }
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();

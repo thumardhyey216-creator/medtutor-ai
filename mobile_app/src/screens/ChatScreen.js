@@ -10,7 +10,8 @@ import {
     Platform,
     ActivityIndicator,
     SafeAreaView,
-    StatusBar
+    StatusBar,
+    Switch
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,7 @@ export default function ChatScreen() {
     ]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [generalMode, setGeneralMode] = useState(false);
     const flatListRef = useRef(null);
 
     const sendMessage = async () => {
@@ -49,7 +51,7 @@ export default function ChatScreen() {
             // Scroll to bottom immediately
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-            const response = await chatService.sendMessage(userMsgText);
+            const response = await chatService.sendMessage(userMsgText, null, { mode: generalMode ? 'general' : 'normal' });
             
             const aiMessage = {
                 id: (Date.now() + 1).toString(),
@@ -117,6 +119,19 @@ export default function ChatScreen() {
                 <Text style={styles.headerTitle}>Dr. Stark AI Tutor</Text>
             </LinearGradient>
 
+            <View style={styles.modeToggleContainer}>
+                <Text style={styles.modeLabel}>
+                    {generalMode ? '🌍 General Knowledge Mode' : '📚 Exam Focused Mode'}
+                </Text>
+                <Switch
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={generalMode ? "#4F46E5" : "#f4f3f4"}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={() => setGeneralMode(prev => !prev)}
+                    value={generalMode}
+                />
+            </View>
+
             <FlatList
                 ref={flatListRef}
                 data={messages}
@@ -143,7 +158,7 @@ export default function ChatScreen() {
                         style={styles.input}
                         value={inputText}
                         onChangeText={setInputText}
-                        placeholder="Ask a medical question..."
+                        placeholder={generalMode ? "Ask anything (General Knowledge)..." : "Ask a medical question (Exam Focus)..."}
                         placeholderTextColor="#94a3b8"
                         multiline
                         maxLength={1000}
@@ -211,6 +226,21 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 20,
         fontWeight: 'bold',
+    },
+    modeToggleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
+    },
+    modeLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#475569',
     },
     listContent: {
         padding: 16,
