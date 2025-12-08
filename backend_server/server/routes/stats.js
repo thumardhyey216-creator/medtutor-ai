@@ -303,7 +303,7 @@ router.get('/today-plan', async (req, res) => {
         // Generate AI study plan
         let plan;
         try {
-            plan = await generateStudyPlan(weakAreas, performance);
+            plan = await generateStudyPlan(weakAreas, performance, userId);
         } catch (aiErr) {
             console.error('AI study plan error:', aiErr);
             // Fallback plan
@@ -319,6 +319,62 @@ router.get('/today-plan', async (req, res) => {
     } catch (err) {
         console.error('Error generating study plan:', err);
         res.status(500).json({ message: 'Failed to generate study plan' });
+    }
+});
+
+/**
+ * GET /api/stats/usage
+ * Get API usage statistics
+ */
+router.get('/usage', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const range = req.query.range || '7d';
+        
+        let dateCondition = '';
+        if (range !== 'all') {
+            const days = range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 365;
+            dateCondition = `AND created_at >= CURRENT_DATE - INTERVAL '${days} days'`;
+        }
+
+        const result = await query(
+            `SELECT 
+                COALESCE(SUM(total_tokens), 0) as total_tokens,
+                COALESCE(SUM(input_tokens), 0) as input_tokens,
+                COALESCE(SUM(output_tokens), 0) as output_tokens,
+                COUNT(*) as request_count
+             FROM api_usage
+             WHERE user_id = $1 ${dateCondition}`,
+            [userId]
+        );
+
+        const breakdownResult = await query(
+            `SELECT 
+                feature,
+                COALESCE(SUM(total_tokens), 0) as total_tokens,
+                COUNT(*) as request_count
+             FROM api_usage
+             WHERE user_id = $1 ${dateCondition}
+             GROUP BY feature`,
+            [userId]
+        );
+
+        res.json({
+            summary: {
+                totalTokens: parseInt(result.rows[0].total_tokens),
+                inputTokens: parseInt(result.rows[0].input_tokens),
+                outputTokens: parseInt(result.rows[0].output_tokens),
+                requestCount: parseInt(result.rows[0].request_count)
+            },
+            breakdown: breakdownResult.rows.map(row => ({
+                feature: row.feature,
+                tokens: parseInt(row.total_tokens),
+                count: parseInt(row.request_count)
+            }))
+        });
+    } catch (err) {
+        console.error('Error fetching API usage:', err);
+        res.status(500).json({ message: 'Failed to fetch usage data' });
     }
 });
 

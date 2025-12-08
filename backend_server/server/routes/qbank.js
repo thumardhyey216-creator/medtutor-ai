@@ -113,7 +113,8 @@ router.post('/start-session', async (req, res) => {
                             context,
                             difficulty || 'medium',
                             needed,
-                            examType || 'neet-pg'
+                            examType || 'neet-pg',
+                            userId
                         );
                     } catch (e) {
                         console.warn(`Generation attempt ${attempts} failed:`, e.message);

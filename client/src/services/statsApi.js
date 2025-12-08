@@ -19,6 +19,11 @@ const StatsAPI = {
     getTodayPlan: async () => {
         const res = await api.get('/stats/today-plan');
         return res.data;
+    },
+
+    getUsage: async (range = '7d') => {
+        const res = await api.get(`/stats/usage?range=${range}`);
+        return res.data;
     }
 };
 

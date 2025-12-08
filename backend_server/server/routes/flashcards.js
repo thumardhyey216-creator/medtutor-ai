@@ -251,7 +251,7 @@ router.post('/generate', async (req, res) => {
 
         // Generate flashcards
         console.log('🤖 Invoking AI generation...');
-        const flashcards = await generateFlashcards(subject, topic, context, count || 5);
+        const flashcards = await generateFlashcards(subject, topic, context, count || 5, userId);
         console.log(`✅ Generated ${flashcards.length} cards.`);
 
         // Create or get deck
@@ -618,7 +618,7 @@ router.post('/from-answer', async (req, res) => {
         }
 
         // Extract key concepts and generate flashcards
-        const flashcards = await generateFlashcards('General', 'Mixed Topics', [{ text }], 3);
+        const flashcards = await generateFlashcards('General', 'Mixed Topics', [{ text }], 3, userId);
 
         // Create a "Generated from Chat" deck if it doesn't exist
         let deckResult = await query(

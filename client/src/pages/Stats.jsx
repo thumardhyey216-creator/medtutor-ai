@@ -9,6 +9,7 @@ const Stats = () => {
     const [overview, setOverview] = useState(null);
     const [activity, setActivity] = useState([]);
     const [accuracyTrend, setAccuracyTrend] = useState([]);
+    const [usage, setUsage] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -19,14 +20,16 @@ const Stats = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [overviewData, activityData, accuracyData] = await Promise.all([
+            const [overviewData, activityData, accuracyData, usageData] = await Promise.all([
                 StatsAPI.getOverview(range),
                 StatsAPI.getActivity(range),
-                StatsAPI.getAccuracy(range)
+                StatsAPI.getAccuracy(range),
+                StatsAPI.getUsage(range)
             ]);
             setOverview(overviewData);
             setActivity(activityData.activity || []);
             setAccuracyTrend(accuracyData.trend || []);
+            setUsage(usageData);
         } catch (err) {
             console.error('Failed to load stats', err);
         } finally {
@@ -123,6 +126,39 @@ const Stats = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* AI Usage Stats */}
+                {usage && (
+                    <div className="card mb-lg">
+                        <h3 className="card-header">AI Usage & Tokens 🤖</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
+                            <div className="text-center p-md bg-secondary rounded">
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                    {usage.summary.totalTokens.toLocaleString()}
+                                </div>
+                                <div className="text-muted">Total Tokens Used</div>
+                            </div>
+                            <div className="text-center p-md bg-secondary rounded">
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent)' }}>
+                                    {usage.summary.requestCount.toLocaleString()}
+                                </div>
+                                <div className="text-muted">Total AI Requests</div>
+                            </div>
+                            <div className="p-md bg-secondary rounded" style={{ gridColumn: 'span 2' }}>
+                                <h4 className="mb-sm text-sm font-bold uppercase text-muted">Usage Breakdown</h4>
+                                {usage.breakdown.map(b => (
+                                    <div key={b.feature} className="flex justify-between items-center mb-xs text-sm">
+                                        <span style={{ textTransform: 'capitalize' }}>{b.feature.replace(/_/g, ' ')}</span>
+                                        <div className="flex items-center gap-md">
+                                            <span className="text-muted">{b.count} reqs</span>
+                                            <span className="font-mono">{b.tokens.toLocaleString()} tok</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Bottom Row */}
                 <div className="grid-dashboard">

@@ -13,10 +13,14 @@ const chatRoutes = require('./server/routes/chat');
 const flashcardsRoutes = require('./server/routes/flashcards');
 const qbankRoutes = require('./server/routes/qbank');
 const statsRoutes = require('./server/routes/stats');
+const { initSchema } = require('./server/config/init-schema');
 
 // Initialize app
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize DB Schema
+initSchema();
 
 // Middleware
 // CORS Configuration

@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { query } = require('../config/database');
 const prompts = require('../config/prompts');
 
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -111,6 +112,30 @@ function extractAndParseJSON(text) {
 }
 
 /**
+ * Log token usage to database
+ */
+async function logTokenUsage(userId, feature, model, usage) {
+    if (!userId || !usage) return;
+
+    try {
+        await query(
+            `INSERT INTO api_usage (user_id, feature, input_tokens, output_tokens, total_tokens, model)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+                userId,
+                feature,
+                usage.promptTokenCount || 0,
+                usage.candidatesTokenCount || 0,
+                usage.totalTokenCount || 0,
+                model
+            ]
+        );
+    } catch (err) {
+        console.error('Failed to log token usage:', err);
+    }
+}
+
+/**
  * Generate chat response
  * @param {number} userId - Optional user ID for token tracking
  */
@@ -188,6 +213,7 @@ Response:`;
 
         if (usage) {
             console.log(`   📊 Tokens: ${usage.totalTokenCount} (Input: ${usage.promptTokenCount}, Output: ${usage.candidatesTokenCount})`);
+            await logTokenUsage(userId, 'chat', CHAT_MODEL, usage);
         }
 
         // Parse suggested questions from response
@@ -227,7 +253,7 @@ Response:`;
 /**
  * Generate flashcards from topic
  */
-async function generateFlashcards(subject, topic, context, count = 5) {
+async function generateFlashcards(subject, topic, context, count = 5, userId = null) {
     try {
         const model = genAI.getGenerativeModel({ model: CHAT_MODEL });
 
@@ -258,6 +284,11 @@ No additional text, only the JSON array.`;
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
+        const usage = response.usageMetadata;
+
+        if (usage) {
+            await logTokenUsage(userId, 'flashcards', CHAT_MODEL, usage);
+        }
 
         return extractAndParseJSON(text);
     } catch (error) {
@@ -270,7 +301,7 @@ No additional text, only the JSON array.`;
  * Generate MCQ questions from topic
  * @param {string} examType - 'neet-pg' or 'ini-cet'
  */
-async function generateQuestions(subject, topic, context, difficulty = 'medium', count = 5, examType = 'neet-pg') {
+async function generateQuestions(subject, topic, context, difficulty = 'medium', count = 5, examType = 'neet-pg', userId = null) {
     try {
         const model = genAI.getGenerativeModel({ model: CHAT_MODEL });
 
@@ -324,6 +355,11 @@ No additional text, only the JSON array.`;
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
+        const usage = response.usageMetadata;
+
+        if (usage) {
+            await logTokenUsage(userId, 'questions', CHAT_MODEL, usage);
+        }
 
         return extractAndParseJSON(text);
     } catch (error) {
@@ -335,7 +371,7 @@ No additional text, only the JSON array.`;
 /**
  * Generate study recommendations
  */
-async function generateStudyPlan(weakAreas, performanceData) {
+async function generateStudyPlan(weakAreas, performanceData, userId = null) {
     try {
         const model = genAI.getGenerativeModel({ model: CHAT_MODEL });
 
@@ -363,6 +399,11 @@ Respond in JSON format:
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
+        const usage = response.usageMetadata;
+
+        if (usage) {
+            await logTokenUsage(userId, 'study_plan', CHAT_MODEL, usage);
+        }
 
         return extractAndParseJSON(text);
     } catch (error) {

@@ -337,7 +337,7 @@ router.post('/message', async (req, res) => {
             }
         }
 
-        const aiResult = await generateChatResponse(cleanMessage, context, normalizedStyle, exam, userId, mode);
+        const aiResult = await generateChatResponse(cleanMessage, context, normalizedStyle, exam, userId, mode, sessionId);
 
         // Extract response components
         const aiResponse = aiResult.response;
