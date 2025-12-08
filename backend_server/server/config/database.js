@@ -24,7 +24,7 @@ const pool = new Pool(
               idleTimeoutMillis: 30000,
               connectionTimeoutMillis: 10000,
               // Enable SSL for Supabase, disable for local if needed
-              ssl: isSupabase ? { rejectUnauthorized: false } : false,
+              ssl: { rejectUnauthorized: false },
           }
 );
 

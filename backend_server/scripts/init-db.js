@@ -15,7 +15,7 @@ const pool = new Pool(
               database: process.env.DB_NAME || 'medtutor_db',
               user: process.env.DB_USER || 'postgres',
               password: process.env.DB_PASSWORD,
-              ssl: process.env.DB_HOST && process.env.DB_HOST.includes('supabase') ? { rejectUnauthorized: false } : false,
+              ssl: { rejectUnauthorized: false },
           }
 );
 
