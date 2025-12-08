@@ -5,7 +5,7 @@
 const express = require('express');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const { generateQuestions } = require('../services/gemini');
+const { generateQuestions, generateChatResponse } = require('../services/gemini');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -407,6 +407,43 @@ router.get('/questions', async (req, res) => {
     } catch (err) {
         console.error('Error fetching questions:', err);
         res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+});
+
+/**
+ * POST /api/qbank/deep-dive
+ * Generate a deep dive explanation for a question
+ */
+router.post('/deep-dive', async (req, res) => {
+    try {
+        const { questionId, selectedOption, correctOption, stem, subject } = req.body;
+
+        const prompt = `
+I am studying ${subject || 'Medicine'}.
+I just answered a question:
+"${stem}"
+
+I selected option ${String.fromCharCode(65 + parseInt(selectedOption))} (index ${selectedOption}).
+The correct answer is option ${String.fromCharCode(65 + parseInt(correctOption))} (index ${correctOption}).
+
+Please provide a "Deep Dive" explanation.
+1. Explain the core concept in depth.
+2. Explain specifically why the correct answer is right.
+3. Explain why my selected answer (if incorrect) is wrong, or common pitfalls if I was correct.
+4. Provide high-yield clinical pearls or key associations.
+        `;
+
+        const result = await generateChatResponse(
+            prompt, 
+            [], // No specific context chunks needed, rely on model knowledge
+            'comprehensive', 
+            'NEET PG'
+        );
+
+        res.json({ content: result.response });
+    } catch (err) {
+        console.error('Error generating deep dive:', err);
+        res.status(500).json({ message: 'Failed to generate deep dive', error: err.message });
     }
 });
 

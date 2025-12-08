@@ -25,6 +25,11 @@ const QBankAPI = {
     getSession: async (sessionId) => { // If needed for resuming
         const res = await api.get(`/qbank/session/${sessionId}`);
         return res.data;
+    },
+
+    getDeepDive: async (data) => {
+        const res = await api.post('/qbank/deep-dive', data);
+        return res.data;
     }
 };
 

@@ -65,6 +65,17 @@ const qbankService = {
             console.error('Error fetching questions:', error);
             throw error;
         }
+    },
+
+    // Get deep dive explanation
+    getDeepDive: async (data) => {
+        try {
+            const response = await api.post('/qbank/deep-dive', data);
+            return response.data;
+        } catch (error) {
+            console.error('Error getting deep dive:', error);
+            throw error;
+        }
     }
 };
 
