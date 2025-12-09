@@ -47,7 +47,11 @@ const QuestionView = ({ question, answer, onSelect, onCheck }) => {
                         {answer.isCorrect ? '✓ Correct Answer' : `Incorrect. Correct: ${['A', 'B', 'C', 'D'][answer.correctOption]}`}
                     </div>
                     <div className="explanation-content">
-                        <ReactMarkdown>{answer.explanation || 'No explanation available.'}</ReactMarkdown>
+                        {answer.explanation && answer.explanation.trim().startsWith('<') ? (
+                            <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                        ) : (
+                            <ReactMarkdown>{answer.explanation || 'No explanation available.'}</ReactMarkdown>
+                        )}
                     </div>
                 </div>
             )}

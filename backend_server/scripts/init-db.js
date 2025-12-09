@@ -15,7 +15,7 @@ const pool = new Pool(
               database: process.env.DB_NAME || 'medtutor_db',
               user: process.env.DB_USER || 'postgres',
               password: process.env.DB_PASSWORD,
-              ssl: { rejectUnauthorized: false },
+              // ssl: { rejectUnauthorized: false }, // Commented out for local dev without SSL
           }
 );
 

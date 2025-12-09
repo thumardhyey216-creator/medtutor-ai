@@ -27,8 +27,18 @@ const QBankAPI = {
         return res.data;
     },
 
+    getActiveSession: async () => {
+        const res = await api.get('/qbank/active-session');
+        return res.data;
+    },
+
     getDeepDive: async (data) => {
         const res = await api.post('/qbank/deep-dive', data);
+        return res.data;
+    },
+
+    sendChat: async (message, history, context) => {
+        const res = await api.post('/qbank/chat', { message, history, context });
         return res.data;
     }
 };

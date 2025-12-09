@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS qbank_sessions (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     mode VARCHAR(50),
     total_questions INTEGER,
+    question_ids JSONB,
     score INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP WITH TIME ZONE
@@ -114,3 +115,12 @@ CREATE INDEX IF NOT EXISTS idx_content_chunks_embedding ON content_chunks USING 
 CREATE INDEX IF NOT EXISTS idx_flashcards_deck_id ON flashcards(deck_id);
 CREATE INDEX IF NOT EXISTS idx_flashcard_reviews_user_id ON flashcard_reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_questions_subject ON questions(subject);
+
+-- Migration to add question_ids if missing (for existing databases)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='qbank_sessions' AND column_name='question_ids') THEN
+        ALTER TABLE qbank_sessions ADD COLUMN question_ids JSONB;
+    END IF;
+END $$;

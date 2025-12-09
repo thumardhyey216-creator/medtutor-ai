@@ -157,6 +157,13 @@ router.post('/start-session', async (req, res) => {
              throw new Error('No questions found and generation failed');
         }
 
+        // Save question IDs to session for resuming
+        const questionIds = finalQuestions.map(q => q.id);
+        await query(
+            'UPDATE qbank_sessions SET question_ids = $1 WHERE id = $2',
+            [JSON.stringify(questionIds), sessionId]
+        );
+
         res.json({
             session: {
                 id: sessionId,
@@ -258,6 +265,102 @@ router.post('/session/:id/complete', async (req, res) => {
     } catch (err) {
         console.error('Error completing session:', err);
         res.status(500).json({ message: 'Failed to complete session' });
+    }
+});
+
+/**
+ * GET /api/qbank/active-session
+ * Get the latest active (incomplete) session for the user
+ */
+router.get('/active-session', async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Find latest incomplete session
+        const sessionResult = await query(
+            `SELECT * FROM qbank_sessions 
+             WHERE user_id = $1 AND completed_at IS NULL 
+             ORDER BY created_at DESC LIMIT 1`,
+            [userId]
+        );
+
+        if (sessionResult.rows.length === 0) {
+            return res.json({ session: null });
+        }
+
+        const session = sessionResult.rows[0];
+
+        // If session has no questions saved (legacy sessions), we can't resume reliably
+        if (!session.question_ids) {
+            return res.json({ session: null });
+        }
+
+        const questionIds = session.question_ids; // Assuming JSONB returns array automatically
+
+        // Fetch questions
+        // We need to fetch them in the order they were saved if possible, or just fetch and reorder
+        // Postgres IN clause doesn't guarantee order.
+        const questionsResult = await query(
+            `SELECT * FROM questions WHERE id = ANY($1::int[])`,
+            [questionIds]
+        );
+
+        let questions = questionsResult.rows;
+        
+        // Reorder questions to match the saved order
+        const questionMap = new Map(questions.map(q => [q.id, q]));
+        const orderedQuestions = questionIds.map(id => questionMap.get(id)).filter(q => q);
+
+        // Fetch attempts
+        const attemptsResult = await query(
+            `SELECT * FROM question_attempts WHERE session_id = $1`,
+            [session.id]
+        );
+        
+        const attempts = {};
+        attemptsResult.rows.forEach(att => {
+            attempts[att.question_id] = {
+                selected: att.selected_option,
+                isCorrect: att.is_correct,
+                timeSpent: att.time_taken_sec,
+                isSubmitted: true,
+                // We might need to fetch explanation if it's not in attempts, 
+                // but we have it in questions list
+            };
+        });
+
+        // Enrich attempts with explanation from questions
+        orderedQuestions.forEach(q => {
+            if (attempts[q.id]) {
+                attempts[q.id].explanation = q.explanation;
+                attempts[q.id].correctOption = q.correct_option;
+            }
+        });
+
+        res.json({
+            session: {
+                id: session.id,
+                mode: session.mode,
+                totalQuestions: session.total_questions,
+                timed: session.mode !== 'quick', // rough approximation or store in DB
+            },
+            questions: orderedQuestions.map(q => ({
+                id: q.id,
+                subject: q.subject || 'General',
+                topic: q.topic || 'Mixed',
+                stem: q.stem,
+                options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+                difficulty: q.difficulty,
+                isAiGenerated: q.is_ai_generated || false,
+                explanation: q.explanation
+            })),
+            answers: attempts,
+            elapsedTime: session.time_taken || 0 // We might need to track this better
+        });
+
+    } catch (err) {
+        console.error('Error fetching active session:', err);
+        res.status(500).json({ message: 'Failed to fetch active session' });
     }
 });
 
@@ -457,6 +560,62 @@ Please provide a "Deep Dive" explanation.
     } catch (err) {
         console.error('Error generating deep dive:', err);
         res.status(500).json({ message: 'Failed to generate deep dive', error: err.message });
+    }
+});
+
+/**
+ * POST /api/qbank/chat
+ * Chat with context of a question
+ */
+router.post('/chat', async (req, res) => {
+    try {
+        const { message, history, context } = req.body;
+        
+        // Context includes: questionId, stem, subject, explanation
+        const prompt = `
+I am studying ${context.subject || 'Medicine'}.
+I have a question about this specific problem:
+
+Question: "${context.stem}"
+Explanation provided: "${context.explanation || 'N/A'}"
+
+My Question: "${message}"
+
+Please answer my question specifically in the context of this problem. 
+If I am asking for clarification, explain it simply.
+If I am asking for related concepts, connect them back to this question.
+Keep the response helpful and educational.
+        `;
+
+        // We pass the history to the model so it remembers previous turns
+        // Transform history to format expected by gemini service if needed
+        // Assuming generateChatResponse handles history or we concatenate it
+        // The current service might not handle history array directly if it's stateless per request
+        // Let's check gemini.js service signature. 
+        // For now, I'll pass empty history to service and rely on prompt construction if service doesn't support history
+        // Or better, I'll append history to the prompt if needed.
+        
+        // Actually, let's look at generateChatResponse signature in gemini.js
+        // It takes (prompt, contextChunks, style, examType)
+        // It doesn't seem to take history. So I should append history to prompt.
+        
+        let fullPrompt = prompt;
+        if (history && history.length > 0) {
+            const historyText = history.map(h => `${h.role === 'user' ? 'Student' : 'Tutor'}: ${h.content}`).join('\n');
+            fullPrompt = `Previous conversation:\n${historyText}\n\n${prompt}`;
+        }
+
+        const result = await generateChatResponse(
+            fullPrompt,
+            [], // No RAG chunks needed as context is provided
+            'standard',
+            'NEET PG'
+        );
+
+        res.json({ content: result.response });
+    } catch (err) {
+        console.error('Error in qbank chat:', err);
+        res.status(500).json({ message: 'Failed to process chat', error: err.message });
     }
 });
 

@@ -158,9 +158,36 @@ const useQBank = () => {
         stopTimer();
     };
 
-    useEffect(() => {
-        return () => stopTimer();
+    const checkActiveSession = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await QBankAPI.getActiveSession();
+            
+            if (data && data.session) {
+                setSession(data.session);
+                setQuestions(data.questions || []);
+                setAnswers(data.answers || {});
+                setElapsedTime(data.elapsedTime || 0);
+                
+                // Find first unanswered question
+                const firstUnanswered = (data.questions || []).findIndex(q => !data.answers[q.id]);
+                setCurrentQuestionIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
+                
+                setStatus('test');
+                startTimeRef.current = Date.now() - ((data.elapsedTime || 0) * 1000);
+                startTimer();
+            }
+        } catch (err) {
+            console.error('Failed to restore session:', err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        checkActiveSession();
+        return () => stopTimer();
+    }, [checkActiveSession]);
 
     return {
         status,
