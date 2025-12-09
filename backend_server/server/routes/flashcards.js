@@ -6,6 +6,7 @@ const express = require('express');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { generateFlashcards, generateEmbedding } = require('../services/gemini');
+const { searchContentChunks } = require('../services/rag');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -227,18 +228,10 @@ router.post('/generate', async (req, res) => {
         let context = [];
 
         try {
-            // Try text-based search
+            // Use Hybrid Search for context
             console.log('🔍 Searching context for flashcards...');
-            const contextResult = await query(
-                `SELECT text FROM content_chunks 
-                 WHERE LOWER(subject) LIKE LOWER($1) 
-                    OR LOWER(topic) LIKE LOWER($2)
-                    OR LOWER(text) LIKE LOWER($3)
-                 LIMIT 5`,
-                [`%${subject}%`, `%${topic}%`, `%${topic}%`]
-            );
-            context = contextResult.rows;
-            console.log(`✅ Found ${context.length} context chunks.`);
+            const searchTerm = `${subject} ${topic}`;
+            context = await searchContentChunks(searchTerm, 5);
         } catch (searchErr) {
             console.error('Context search error:', searchErr);
         }

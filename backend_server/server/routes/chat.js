@@ -7,6 +7,7 @@ const { validate: validateUuid } = require('uuid');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { generateChatResponse, generateEmbedding } = require('../services/gemini');
+const { searchContentChunks } = require('../services/rag');
 
 const router = express.Router();
 
@@ -241,99 +242,12 @@ router.post('/message', async (req, res) => {
             context = cachedContext;
             console.log(`📦 Using cached context (${context.length} chunks)`);
         } else {
-            try {
-                // ═══════════════════════════════════════════════════════════
-                // HYBRID SEARCH: Vector Similarity + Keyword Search
-                // ═══════════════════════════════════════════════════════════
-
-                console.log(`🔍 Executing hybrid search (depth: ${retrievalDepth})...`);
-
-                // Generate embedding for vector search
-                const userEmbedding = await generateEmbedding(cleanMessage);
-
-                // Extract keywords for text search
-                const keywords = cleanMessage
-                    .toLowerCase()
-                    .replace(/[^\w\s]/g, ' ')
-                    .split(/\s+/)
-                    .filter(word => word.length > 3)
-                    .slice(0, 5)
-                    .join(' & ');
-
-                // Run both searches in parallel
-                const [vectorResults, keywordResults] = await Promise.all([
-                    // 1. Vector similarity search (requires embeddings)
-                    query(
-                        `SELECT id, subject, topic, text, 
-                                1 - (embedding <=> $1::vector) AS similarity
-                         FROM content_chunks
-                         WHERE embedding IS NOT NULL
-                         ORDER BY embedding <=> $1::vector
-                         LIMIT $2`,
-                        [JSON.stringify(userEmbedding), retrievalDepth]
-                    ).catch(err => {
-                        console.warn('Vector search failed:', err.message);
-                        return { rows: [] };
-                    }),
-
-                    // 2. Full-text keyword search (works without embeddings)
-                    query(
-                        `SELECT id, subject, topic, text,
-                                ts_rank(to_tsvector('english', text), to_tsquery('english', $1)) AS rank
-                         FROM content_chunks
-                         WHERE to_tsvector('english', text) @@ to_tsquery('english', $1)
-                            OR LOWER(text) ILIKE $2
-                            OR LOWER(subject) ILIKE $2
-                            OR LOWER(topic) ILIKE $2
-                         ORDER BY rank DESC
-                         LIMIT $3`,
-                        [keywords || 'medical', `%${cleanMessage.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
-                    ).catch(err => {
-                        console.warn('Keyword search failed, using ILIKE fallback:', err.message);
-                        // Fallback to simple ILIKE if tsquery fails
-                        return query(
-                            `SELECT id, subject, topic, text
-                             FROM content_chunks
-                             WHERE LOWER(text) ILIKE $1
-                                OR LOWER(subject) ILIKE $1
-                                OR LOWER(topic) ILIKE $1
-                             LIMIT $2`,
-                            [`%${cleanMessage.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
-                        );
-                    })
-                ]);
-
-                console.log(`✅ Vector: ${vectorResults.rows.length} | Keyword: ${keywordResults.rows.length}`);
-
-                // Merge and deduplicate results (prioritize vector search)
-                const seenIds = new Set();
-                const mergedContext = [];
-
-                // Add vector results first
-                for (const row of vectorResults.rows) {
-                    if (!seenIds.has(row.id)) {
-                        seenIds.add(row.id);
-                        mergedContext.push(row);
-                    }
-                }
-
-                // Add keyword results
-                for (const row of keywordResults.rows) {
-                    if (!seenIds.has(row.id) && mergedContext.length < retrievalDepth) {
-                        seenIds.add(row.id);
-                        mergedContext.push(row);
-                    }
-                }
-
-                context = mergedContext;
-                console.log(`📊 Final context: ${context.length} chunks (${seenIds.size} unique)`);
-
-                // Cache the results for 5 minutes
+            // Use RAG Service
+            context = await searchContentChunks(cleanMessage, retrievalDepth);
+            
+            // Cache results
+            if (context.length > 0) {
                 cache.set(cacheKey, context, 300);
-
-            } catch (searchErr) {
-                console.error('❌ Context retrieval error:', searchErr);
-                // Continue with empty context - AI will use general knowledge
             }
         }
 

@@ -6,6 +6,7 @@ const express = require('express');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { generateQuestions, generateChatResponse, generateEmbedding } = require('../services/gemini');
+const { searchContentChunks } = require('../services/rag');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -70,20 +71,10 @@ router.post('/start-session', async (req, res) => {
                 // Get relevant context
                 let context = [];
                 try {
-                    // Prioritize custom prompt for context search if available
+                    // Use Hybrid Search for context
                     const searchTerm = customPrompt || subject;
-                    
                     if (searchTerm) {
-                        const contextResult = await query(
-                            `SELECT text, subject, topic FROM content_chunks 
-                             WHERE LOWER(subject) LIKE LOWER($1) 
-                                OR LOWER(topic) LIKE LOWER($1)
-                                OR LOWER(text) LIKE LOWER($1)
-                             ORDER BY RANDOM()
-                             LIMIT 5`,
-                            [`%${searchTerm}%`]
-                        );
-                        context = contextResult.rows;
+                        context = await searchContentChunks(searchTerm, 5);
                     }
 
                     // If still no context, use a generic prompt
@@ -416,15 +407,8 @@ router.post('/generate', async (req, res) => {
         // Get relevant context using text search
         let context = [];
         try {
-            const contextResult = await query(
-                `SELECT text FROM content_chunks 
-                 WHERE LOWER(subject) LIKE LOWER($1) 
-                    OR LOWER(topic) LIKE LOWER($2)
-                    OR LOWER(text) LIKE LOWER($3)
-                 LIMIT 5`,
-                [`%${subject}%`, `%${topic}%`, `%${topic}%`]
-            );
-            context = contextResult.rows;
+            const searchTerm = `${subject} ${topic}`;
+            context = await searchContentChunks(searchTerm, 5);
         } catch (searchErr) {
             console.error('Context search error:', searchErr);
         }
@@ -598,76 +582,10 @@ Keep the response helpful and educational.
         // We want to find relevant content chunks from Supabase to augment the answer
         let ragContext = [];
         try {
-            console.log(`🔍 Executing RAG search for QBank chat: "${message.substring(0, 50)}..."`);
-            
-            // Generate embedding for vector search
-            const userEmbedding = await generateEmbedding(message);
-
-            // Extract keywords for text search
-            const keywords = message
-                .toLowerCase()
-                .replace(/[^\w\s]/g, ' ')
-                .split(/\s+/)
-                .filter(word => word.length > 3)
-                .slice(0, 5)
-                .join(' & ');
-
-            const retrievalDepth = 10; // Slightly less than full chat since we have question context
-
-            // Run both searches in parallel
-            const [vectorResults, keywordResults] = await Promise.all([
-                // Vector similarity search
-                query(
-                    `SELECT id, subject, topic, text, 
-                            1 - (embedding <=> $1::vector) AS similarity
-                        FROM content_chunks
-                        WHERE embedding IS NOT NULL
-                        ORDER BY embedding <=> $1::vector
-                        LIMIT $2`,
-                    [JSON.stringify(userEmbedding), retrievalDepth]
-                ).catch(err => {
-                    console.warn('Vector search failed:', err.message);
-                    return { rows: [] };
-                }),
-
-                // Full-text keyword search
-                query(
-                    `SELECT id, subject, topic, text,
-                            ts_rank(to_tsvector('english', text), to_tsquery('english', $1)) AS rank
-                        FROM content_chunks
-                        WHERE to_tsvector('english', text) @@ to_tsquery('english', $1)
-                        OR LOWER(text) ILIKE $2
-                        OR LOWER(subject) ILIKE $2
-                        OR LOWER(topic) ILIKE $2
-                        ORDER BY rank DESC
-                        LIMIT $3`,
-                    [keywords || 'medical', `%${message.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
-                ).catch(err => {
-                    console.warn('Keyword search failed, using ILIKE fallback:', err.message);
-                    return query(
-                        `SELECT id, subject, topic, text
-                            FROM content_chunks
-                            WHERE LOWER(text) ILIKE $1
-                            OR LOWER(subject) ILIKE $1
-                            OR LOWER(topic) ILIKE $1
-                            LIMIT $2`,
-                        [`%${message.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
-                    ).catch(e => ({ rows: [] }));
-                })
-            ]);
-
-            // Combine and Deduplicate
-            const combined = [...vectorResults.rows, ...keywordResults.rows];
-            const uniqueMap = new Map();
-            combined.forEach(item => {
-                if (!uniqueMap.has(item.id)) {
-                    uniqueMap.set(item.id, item);
-                }
-            });
-            
-            ragContext = Array.from(uniqueMap.values());
-            console.log(`✅ Found ${ragContext.length} relevant chunks for QBank chat`);
-
+            // Use RAG Service
+            // Context includes question stem and explanation, so we add that to the search
+            const searchContext = `${context.stem} ${message}`;
+            ragContext = await searchContentChunks(searchContext, 10);
         } catch (searchErr) {
             console.error('Error during RAG search in QBank:', searchErr);
             // Continue without RAG context if search fails
