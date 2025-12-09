@@ -14,6 +14,7 @@ const TestInterface = ({
     onNavigate,
     onFlag,
     onSubmitTest,
+    onExit,
     elapsedTime
 }) => {
     const [isDeepDiveOpen, setIsDeepDiveOpen] = useState(false);

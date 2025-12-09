@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const QBankDashboard = ({ onStartTest }) => {
+const QBankDashboard = ({ onStartTest, activeSessionAvailable, onResumeSession, activeSessionData }) => {
     const [selectedMode, setSelectedMode] = useState('quick');
     const [filters, setFilters] = useState({
         subject: '',
@@ -10,6 +10,12 @@ const QBankDashboard = ({ onStartTest }) => {
     const [isGenerating, setIsGenerating] = useState(false);
 
     const handleStart = async () => {
+        if (activeSessionAvailable) {
+            if (!window.confirm("Starting a new test will save your current session in history but you won't be able to resume it as 'active'. Continue?")) {
+                return;
+            }
+        }
+
         setIsGenerating(true);
         // Configuration map
         const modeConfig = {
@@ -31,6 +37,27 @@ const QBankDashboard = ({ onStartTest }) => {
 
     return (
         <div id="mode-selection">
+            {activeSessionAvailable && (
+                <div className="card mb-lg" style={{ borderLeft: '4px solid var(--primary)', background: 'var(--bg-subtle)' }}>
+                    <div className="flex justify-between items-center flex-wrap gap-md">
+                        <div>
+                            <h3 className="text-lg font-bold">Resume Your Session</h3>
+                            <p className="text-muted">
+                                You have an incomplete <strong>{activeSessionData?.mode}</strong> session with {activeSessionData?.totalQuestions} questions.
+                            </p>
+                        </div>
+                        <div className="flex gap-sm">
+                            <button 
+                                onClick={onResumeSession}
+                                className="btn btn-primary"
+                            >
+                                Resume Test ▶
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="card mb-lg">
                 <div className="flex gap-md flex-wrap">
                     <select

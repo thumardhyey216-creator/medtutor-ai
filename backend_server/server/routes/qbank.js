@@ -5,7 +5,7 @@
 const express = require('express');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const { generateQuestions, generateChatResponse } = require('../services/gemini');
+const { generateQuestions, generateChatResponse, generateEmbedding } = require('../services/gemini');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -571,8 +571,9 @@ router.post('/chat', async (req, res) => {
     try {
         const { message, history, context } = req.body;
         
+        // 1. Prepare Prompt
         // Context includes: questionId, stem, subject, explanation
-        const prompt = `
+        const basePrompt = `
 I am studying ${context.subject || 'Medicine'}.
 I have a question about this specific problem:
 
@@ -587,27 +588,95 @@ If I am asking for related concepts, connect them back to this question.
 Keep the response helpful and educational.
         `;
 
-        // We pass the history to the model so it remembers previous turns
-        // Transform history to format expected by gemini service if needed
-        // Assuming generateChatResponse handles history or we concatenate it
-        // The current service might not handle history array directly if it's stateless per request
-        // Let's check gemini.js service signature. 
-        // For now, I'll pass empty history to service and rely on prompt construction if service doesn't support history
-        // Or better, I'll append history to the prompt if needed.
-        
-        // Actually, let's look at generateChatResponse signature in gemini.js
-        // It takes (prompt, contextChunks, style, examType)
-        // It doesn't seem to take history. So I should append history to prompt.
-        
-        let fullPrompt = prompt;
+        let fullPrompt = basePrompt;
         if (history && history.length > 0) {
             const historyText = history.map(h => `${h.role === 'user' ? 'Student' : 'Tutor'}: ${h.content}`).join('\n');
-            fullPrompt = `Previous conversation:\n${historyText}\n\n${prompt}`;
+            fullPrompt = `Previous conversation:\n${historyText}\n\n${basePrompt}`;
         }
 
+        // 2. Perform Hybrid Search for RAG
+        // We want to find relevant content chunks from Supabase to augment the answer
+        let ragContext = [];
+        try {
+            console.log(`🔍 Executing RAG search for QBank chat: "${message.substring(0, 50)}..."`);
+            
+            // Generate embedding for vector search
+            const userEmbedding = await generateEmbedding(message);
+
+            // Extract keywords for text search
+            const keywords = message
+                .toLowerCase()
+                .replace(/[^\w\s]/g, ' ')
+                .split(/\s+/)
+                .filter(word => word.length > 3)
+                .slice(0, 5)
+                .join(' & ');
+
+            const retrievalDepth = 10; // Slightly less than full chat since we have question context
+
+            // Run both searches in parallel
+            const [vectorResults, keywordResults] = await Promise.all([
+                // Vector similarity search
+                query(
+                    `SELECT id, subject, topic, text, 
+                            1 - (embedding <=> $1::vector) AS similarity
+                        FROM content_chunks
+                        WHERE embedding IS NOT NULL
+                        ORDER BY embedding <=> $1::vector
+                        LIMIT $2`,
+                    [JSON.stringify(userEmbedding), retrievalDepth]
+                ).catch(err => {
+                    console.warn('Vector search failed:', err.message);
+                    return { rows: [] };
+                }),
+
+                // Full-text keyword search
+                query(
+                    `SELECT id, subject, topic, text,
+                            ts_rank(to_tsvector('english', text), to_tsquery('english', $1)) AS rank
+                        FROM content_chunks
+                        WHERE to_tsvector('english', text) @@ to_tsquery('english', $1)
+                        OR LOWER(text) ILIKE $2
+                        OR LOWER(subject) ILIKE $2
+                        OR LOWER(topic) ILIKE $2
+                        ORDER BY rank DESC
+                        LIMIT $3`,
+                    [keywords || 'medical', `%${message.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
+                ).catch(err => {
+                    console.warn('Keyword search failed, using ILIKE fallback:', err.message);
+                    return query(
+                        `SELECT id, subject, topic, text
+                            FROM content_chunks
+                            WHERE LOWER(text) ILIKE $1
+                            OR LOWER(subject) ILIKE $1
+                            OR LOWER(topic) ILIKE $1
+                            LIMIT $2`,
+                        [`%${message.toLowerCase()}%`, Math.ceil(retrievalDepth / 2)]
+                    ).catch(e => ({ rows: [] }));
+                })
+            ]);
+
+            // Combine and Deduplicate
+            const combined = [...vectorResults.rows, ...keywordResults.rows];
+            const uniqueMap = new Map();
+            combined.forEach(item => {
+                if (!uniqueMap.has(item.id)) {
+                    uniqueMap.set(item.id, item);
+                }
+            });
+            
+            ragContext = Array.from(uniqueMap.values());
+            console.log(`✅ Found ${ragContext.length} relevant chunks for QBank chat`);
+
+        } catch (searchErr) {
+            console.error('Error during RAG search in QBank:', searchErr);
+            // Continue without RAG context if search fails
+        }
+
+        // 3. Generate Response
         const result = await generateChatResponse(
             fullPrompt,
-            [], // No RAG chunks needed as context is provided
+            ragContext, 
             'standard',
             'NEET PG'
         );

@@ -12,6 +12,7 @@ const useQBank = () => {
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [activeSessionAvailable, setActiveSessionAvailable] = useState(false);
 
     // Timer State
     const [elapsedTime, setElapsedTime] = useState(0);
@@ -155,7 +156,17 @@ const useQBank = () => {
         setAnswers({});
         setResults(null);
         setError(null);
+        setActiveSessionAvailable(false);
         stopTimer();
+    };
+
+    const resumeSession = () => {
+        if (session && status === 'dashboard') {
+            setStatus('test');
+            // Recalculate start time based on elapsed
+            startTimeRef.current = Date.now() - ((elapsedTime || 0) * 1000);
+            startTimer();
+        }
     };
 
     const checkActiveSession = useCallback(async () => {
@@ -173,9 +184,10 @@ const useQBank = () => {
                 const firstUnanswered = (data.questions || []).findIndex(q => !data.answers[q.id]);
                 setCurrentQuestionIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
                 
-                setStatus('test');
-                startTimeRef.current = Date.now() - ((data.elapsedTime || 0) * 1000);
-                startTimer();
+                // Don't auto-start. Just mark as available.
+                setActiveSessionAvailable(true);
+            } else {
+                setActiveSessionAvailable(false);
             }
         } catch (err) {
             console.error('Failed to restore session:', err);
@@ -184,9 +196,9 @@ const useQBank = () => {
         }
     }, []);
 
+    // Initial check
     useEffect(() => {
         checkActiveSession();
-        return () => stopTimer();
     }, [checkActiveSession]);
 
     return {
@@ -200,13 +212,16 @@ const useQBank = () => {
         loading,
         error,
         elapsedTime,
+        activeSessionAvailable,
         startTest,
         selectOption,
         checkAnswer,
         toggleFlag,
         submitTest,
         navigateQuestion,
-        reset
+        reset,
+        resumeSession,
+        checkActiveSession
     };
 };
 

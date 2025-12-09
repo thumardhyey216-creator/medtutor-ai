@@ -15,13 +15,16 @@ const QBank = () => {
         answers,
         results,
         elapsedTime,
+        activeSessionAvailable,
+        session,
         startTest,
         selectOption,
         checkAnswer,
         toggleFlag,
         submitTest,
         navigateQuestion,
-        reset
+        reset,
+        resumeSession
     } = useQBank();
 
     return (
@@ -51,7 +54,12 @@ const QBank = () => {
 
                 {/* Status-based Rendering */}
                 {status === 'dashboard' && (
-                    <QBankDashboard onStartTest={startTest} />
+                    <QBankDashboard 
+                        onStartTest={startTest} 
+                        activeSessionAvailable={activeSessionAvailable}
+                        onResumeSession={resumeSession}
+                        activeSessionData={session}
+                    />
                 )}
 
                 {status === 'test' && (
@@ -66,6 +74,7 @@ const QBank = () => {
                         onNavigate={navigateQuestion}
                         onFlag={toggleFlag}
                         onSubmitTest={submitTest}
+                        onExit={reset}
                     />
                 )}
 
